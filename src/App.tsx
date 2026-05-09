@@ -149,9 +149,11 @@ function AppInner() {
     if (!row) return;
     const data = row.data as FlowData;
 
+    console.log('[ZF-DEBUG] row.data type:', typeof row.data, 'nodes_meta:', !!row.nodes_meta);
     if (row.nodes_meta) setNodesMeta(row.nodes_meta);
     else setNodesMeta({});
 
+    console.log('[ZF-DEBUG] about to call normalizeEdges/pruneOrphan, nodes raw:', JSON.stringify((data.nodes||[]).slice(0,1)));
     useZampFlowStore.setState(state => {
       const loadedNodes = (data.nodes as Node<NodeData>[]) ?? [];
       const loadedEdges = (data.edges as Edge<EdgeData>[]) ?? [];
