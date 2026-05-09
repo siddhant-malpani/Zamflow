@@ -1,31 +1,13 @@
 import { create } from 'zustand';
 import { Node, Edge, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, Connection } from 'reactflow';
-import { AppState, Process, NodeData, EdgeData, Version, Snapshot, Whiteboard, NodesMeta, Comment } from './types';
+import { AppState, Process, NodeData, EdgeData, Version, Snapshot, Whiteboard } from './types';
 import { loadState, saveState } from '../lib/persistence';
-import { normalizeEdges } from '../lib/normalizeEdges';
-import { TEMPLATES } from '../templates';
-// Import the active connection style getter at module level.
-// This avoids the broken require() call that was crashing onConnect at runtime.
 import { getActiveConnectionStyle } from '../components/RightSidebar';
+import { TEMPLATES } from '../templates';
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-// ── V2 extended state ────────────────────────────────────────────────────────
-interface V2State {
-  // nodes_meta: keyed by nodeId, per active flow
-  nodesMeta: NodesMeta;
-  setNodesMeta: (meta: NodesMeta) => void;
-  setNodeNote: (nodeId: string, notes: string) => void;
-  addComment: (nodeId: string, comment: Comment) => void;
-  // expanded node inline
-  expandedNodeId: string | null;
-  setExpandedNodeId: (id: string | null) => void;
-  // text panel
-  showTextPanel: boolean;
-  setShowTextPanel: (v: boolean) => void;
-}
-
-interface ZampFlowStore extends AppState, V2State {
+interface ZampFlowStore extends AppState {
   lastSaved: Date | null;
   activeProcess: () => Process | null;
   setActiveProcess: (id: string) => void;
@@ -59,28 +41,6 @@ export const useZampFlowStore = create<ZampFlowStore>((set, get) => ({
   ...initialState,
   lastSaved: null,
 
-  // ── V2 initial state ────────────────────────────────────────────────────
-  nodesMeta: {},
-  setNodesMeta: (meta) => set({ nodesMeta: meta }),
-  setNodeNote: (nodeId, notes) => set((s) => {
-    const existing = s.nodesMeta[nodeId] || { notes: '', comments: [] };
-    return { nodesMeta: { ...s.nodesMeta, [nodeId]: { ...existing, notes } } };
-  }),
-  addComment: (nodeId, comment) => set((s) => {
-    const existing = s.nodesMeta[nodeId] || { notes: '', comments: [] };
-    return {
-      nodesMeta: {
-        ...s.nodesMeta,
-        [nodeId]: { ...existing, comments: [...existing.comments, comment] },
-      },
-    };
-  }),
-  expandedNodeId: null,
-  setExpandedNodeId: (id) => set({ expandedNodeId: id }),
-  showTextPanel: false,
-  setShowTextPanel: (v) => set({ showTextPanel: v }),
-
-  // ── Existing store ────────────────────────────────────────────────────────
   activeProcess: () => {
     const { processes, activeProcessId } = get();
     return processes.find(p => p.id === activeProcessId) || null;
@@ -150,8 +110,7 @@ export const useZampFlowStore = create<ZampFlowStore>((set, get) => ({
   setEdges: (edges) => {
     const { activeProcessId } = get();
     if (!activeProcessId) return;
-    const normalized = normalizeEdges(edges);
-    set(s => ({ processes: s.processes.map(p => p.id === activeProcessId ? { ...p, edges: normalized, updated_at: new Date().toISOString() } : p) }));
+    set(s => ({ processes: s.processes.map(p => p.id === activeProcessId ? { ...p, edges, updated_at: new Date().toISOString() } : p) }));
     get().triggerSave();
   },
 
@@ -170,33 +129,29 @@ export const useZampFlowStore = create<ZampFlowStore>((set, get) => ({
   },
 
   onConnect: (connection) => {
-    console.log('[zampflow] onConnect called with:', JSON.stringify(connection));
     try {
       const proc = get().activeProcess();
       if (!proc) return;
-      // Defensive fallback in case getActiveConnectionStyle throws (e.g. circular import race)
-      let style: { dashed: boolean; arrow: string } = { dashed: false, arrow: 'target' };
-      try {
-        style = getActiveConnectionStyle();
-      } catch (styleErr) {
-        console.error('[zampflow] getActiveConnectionStyle error:', styleErr);
-      }
-      const edges = addEdge({
+      // Defensive handle-null fallback: React Flow may pass null handles on
+      // some drag interactions; addEdge will throw if handles are null.
+      const safeConnection = {
         ...connection,
-        id: `e-${connection.source}-${connection.sourceHandle ?? ''}-${connection.target}-${connection.targetHandle ?? ''}-${Date.now()}`,
-        type: 'custom',
-        data: {
-          edgeType: 'smoothstep',
-          thickness: 2,
-          color: '#6366f1',
-          dashed: style.dashed,
-          arrow: style.arrow !== 'none',
-          markerStart: style.arrow === 'both',
-        },
-      }, proc.edges) as Edge<EdgeData>[];
+        sourceHandle: connection.sourceHandle ?? 'default',
+        targetHandle: connection.targetHandle ?? 'default',
+      };
+      const cs = getActiveConnectionStyle();
+      const edgeData = {
+        edgeType: 'smoothstep' as const,
+        thickness: 2,
+        color: '#6366f1',
+        arrow: cs.arrow !== 'none',
+        dashed: cs.dashed,
+        markerStart: cs.arrow === 'both',
+      };
+      const edges = addEdge({ ...safeConnection, type: 'custom', data: edgeData }, proc.edges) as Edge<EdgeData>[];
       get().setEdges(edges);
-    } catch (e) {
-      console.error('[zampflow] onConnect error:', e);
+    } catch (err) {
+      console.error('[ZampFlow] onConnect failed — drag-to-connect error:', err, 'connection:', connection);
     }
   },
 
