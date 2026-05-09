@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Node, Edge, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, Connection } from 'reactflow';
 import { AppState, Process, NodeData, EdgeData, Version, Snapshot, Whiteboard, NodesMeta, Comment } from './types';
 import { loadState, saveState } from '../lib/persistence';
+import { normalizeEdge } from '../lib/normalizeEdges';
 import { getActiveConnectionStyle } from '../components/RightSidebar';
 import { TEMPLATES } from '../templates';
 
@@ -159,7 +160,10 @@ export const useZampFlowStore = create<ZampFlowStore>((set, get) => ({
         dashed: cs.dashed,
         markerStart: cs.arrow === 'both',
       };
-      const edges = addEdge({ ...safeConnection, type: 'custom', data: edgeData }, proc.edges) as Edge<EdgeData>[];
+      const rawEdges = addEdge({ ...safeConnection, type: 'custom', data: edgeData }, proc.edges) as Edge<EdgeData>[];
+      // Normalize new edges so markerEnd / markerStart SVG markers are applied immediately
+      // (normalizeEdges is called on load but not on addEdge; this closes that gap)
+      const edges = rawEdges.map(e => normalizeEdge(e) as Edge<EdgeData>);
       get().setEdges(edges);
     } catch (err) {
       console.error('[ZampFlow] onConnect failed — drag-to-connect error:', err, 'connection:', connection);
@@ -176,7 +180,13 @@ export const useZampFlowStore = create<ZampFlowStore>((set, get) => ({
   updateEdgeData: (edgeId, data) => {
     const proc = get().activeProcess();
     if (!proc) return;
-    const edges = proc.edges.map(e => e.id === edgeId ? { ...e, data: { ...e.data, ...data } } : e);
+    // Merge new data then re-normalize so markerEnd/markerStart SVG markers reflect
+    // the updated arrow/dashed booleans immediately (palette style changes, etc.)
+    const edges = proc.edges.map(e =>
+      e.id === edgeId
+        ? (normalizeEdge({ ...e, data: { ...e.data, ...data } }) as Edge<EdgeData>)
+        : e
+    );
     get().setEdges(edges);
   },
 
