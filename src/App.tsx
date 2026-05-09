@@ -266,7 +266,6 @@ export default function App() {
 
 
 
-  // Public viewer — no auth, hash or path-based routing
   const publicSlug = getPublicSlug();
   if (publicSlug) return <PublicViewer slug={publicSlug} />;
 
