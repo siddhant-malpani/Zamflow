@@ -10,7 +10,6 @@ import { FlowsPanel } from './components/FlowsPanel';
 import { LegacyImportBanner } from './components/LegacyImportBanner';
 import { TextPanel } from './components/TextPanel';
 import { PublicViewer } from './components/PublicViewer';
-
 import { useZampFlowStore } from './store/useZampFlowStore';
 import { useAuthStore } from './auth/useAuth';
 import { useFlows } from './lib/useFlows';
@@ -110,8 +109,17 @@ function AppInner() {
   const flowsRef = useRef(flowsApi.flows);
   useEffect(() => { flowsRef.current = flowsApi.flows; }, [flowsApi.flows]);
 
+  // ── Track whether we've already reset for this user session so that the
+  // reset doesn't fire a second time after loadFlowIntoCanvas has populated
+  // the store (which would erase the loaded flow).
+  const lastResetUidRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!user || !cloudEnabled) return;
+    // Only reset once per user UID — prevents erasing the store after
+    // loadFlowIntoCanvas has already populated it.
+    if (lastResetUidRef.current === user.supabaseUid) return;
+    lastResetUidRef.current = user.supabaseUid;
     useZampFlowStore.setState({ processes: [], activeProcessId: null });
 
     // On first sign-in with the new auth flow, re-attribute any pre-existing rows
