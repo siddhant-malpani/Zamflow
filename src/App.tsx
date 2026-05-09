@@ -120,6 +120,7 @@ function AppInner() {
     // loadFlowIntoCanvas has already populated it.
     if (lastResetUidRef.current === user.supabaseUid) return;
     lastResetUidRef.current = user.supabaseUid;
+    console.log('[ZF-DEBUG] RESET EFFECT firing for uid:', user.supabaseUid);
     useZampFlowStore.setState({ processes: [], activeProcessId: null });
 
     // On first sign-in with the new auth flow, re-attribute any pre-existing rows
@@ -142,7 +143,9 @@ function AppInner() {
   }, []);
 
   const loadFlowIntoCanvas = useCallback(async (id: string) => {
+    console.log('[ZF-DEBUG] loadFlowIntoCanvas called for id:', id, 'user:', user?.email, 'accessToken present:', !!user?.accessToken);
     const row = await flowsApi.loadFlow(id);
+    console.log('[ZF-DEBUG] loadFlow returned:', row ? `{name:${row.name}, nodes:${row.data?.nodes?.length}}` : 'NULL');
     if (!row) return;
     const data = row.data as FlowData;
 
@@ -153,6 +156,7 @@ function AppInner() {
       const loadedNodes = (data.nodes as Node<NodeData>[]) ?? [];
       const loadedEdges = (data.edges as Edge<EdgeData>[]) ?? [];
       const cleanEdges = normalizeEdges(pruneOrphanEdges(loadedNodes, loadedEdges));
+      console.log('[ZF-DEBUG] setState nodes:', loadedNodes.length, 'edges:', cleanEdges.length, 'id:', id);
       const proc = {
         id, name: row.name, description: '', category: 'General', tags: [],
         created_at: row.created_at, updated_at: row.updated_at,
@@ -161,10 +165,12 @@ function AppInner() {
       };
       return { processes: [proc], activeProcessId: id };
     });
+    console.log('[ZF-DEBUG] setState done, store activeProcessId:', useZampFlowStore.getState().activeProcessId, 'processCount:', useZampFlowStore.getState().processes.length);
     if (data.viewport) setViewport(data.viewport);
   }, [flowsApi, setViewport, setNodesMeta]);
 
   useEffect(() => {
+    console.log('[ZF-DEBUG] currentFlowId effect fired, id:', flowsApi.currentFlowId);
     if (flowsApi.currentFlowId) loadFlowIntoCanvas(flowsApi.currentFlowId);
   }, [flowsApi.currentFlowId]); // eslint-disable-line
 
