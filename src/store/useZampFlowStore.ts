@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Node, Edge, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange, Connection } from 'reactflow';
-import { AppState, Process, NodeData, EdgeData, Version, Snapshot, Whiteboard } from './types';
+import { AppState, Process, NodeData, EdgeData, Version, Snapshot, Whiteboard, NodesMeta, Comment } from './types';
 import { loadState, saveState } from '../lib/persistence';
 import { getActiveConnectionStyle } from '../components/RightSidebar';
 import { TEMPLATES } from '../templates';
@@ -33,6 +33,17 @@ interface ZampFlowStore extends AppState {
   setTheme: (theme: 'dark' | 'light') => void;
   setPreference: (key: string, value: any) => void;
   triggerSave: () => void;
+  // nodes_meta slice
+  nodesMeta: NodesMeta;
+  setNodesMeta: (meta: NodesMeta) => void;
+  setNodeNote: (nodeId: string, notes: string) => void;
+  addComment: (nodeId: string, comment: Comment) => void;
+  // expanded node
+  expandedNodeId: string | null;
+  setExpandedNodeId: (id: string | null) => void;
+  // text panel
+  showTextPanel: boolean;
+  setShowTextPanel: (v: boolean) => void;
 }
 
 const initialState = loadState();
@@ -256,5 +267,30 @@ export const useZampFlowStore = create<ZampFlowStore>((set, get) => ({
       saveState({ processes: state.processes, activeProcessId: state.activeProcessId, theme: state.theme, preferences: state.preferences });
       set({ lastSaved: new Date() });
     }, 1000);
-  }
+  },
+
+  // nodes_meta slice
+  nodesMeta: {},
+  setNodesMeta: (meta) => set({ nodesMeta: meta }),
+  setNodeNote: (nodeId, notes) => set((s) => {
+    const existing = s.nodesMeta[nodeId] || { notes: '', comments: [] };
+    return { nodesMeta: { ...s.nodesMeta, [nodeId]: { ...existing, notes } } };
+  }),
+  addComment: (nodeId, comment) => set((s) => {
+    const existing = s.nodesMeta[nodeId] || { notes: '', comments: [] };
+    return {
+      nodesMeta: {
+        ...s.nodesMeta,
+        [nodeId]: { ...existing, comments: [...existing.comments, comment] },
+      },
+    };
+  }),
+
+  // expanded node
+  expandedNodeId: null,
+  setExpandedNodeId: (id) => set({ expandedNodeId: id }),
+
+  // text panel
+  showTextPanel: false,
+  setShowTextPanel: (v) => set({ showTextPanel: v }),
 }));
