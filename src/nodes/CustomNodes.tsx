@@ -14,12 +14,12 @@ import { formatRelative } from '../lib/formatRelative';
 // parent node (.react-flow__node:hover) or when a connection is being dragged
 // (.react-flow__handle-connecting).
 const handleBaseStyle: React.CSSProperties = {
-  width: 12,
-  height: 12,
+  width: 8,
+  height: 8,
   background: '#6366f1',
   border: '2px solid #ffffff',
   opacity: 0,                    // hidden at rest; revealed by CSS hover rule
-  transition: 'opacity 0.15s, transform 0.15s',
+  transition: 'opacity 0.15s, transform 0.15s, box-shadow 0.15s',
   zIndex: 10,
 };
 
@@ -169,6 +169,8 @@ interface NodeShellProps extends NodeProps<NodeData> {
   labelClassName?: string;
   /** Override label style — use for diamond inset padding */
   labelStyle?: React.CSSProperties;
+  /** Tailwind ring class for selected state accent color */
+  accentRingClass?: string;
 }
 
 function NodeShell({
@@ -176,6 +178,7 @@ function NodeShell({
   minW = 80, minH = 40,
   labelClassName,
   labelStyle,
+  accentRingClass = 'ring-indigo-500',
 }: NodeShellProps & { dragging?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(data.label);
@@ -275,7 +278,7 @@ function NodeShell({
             style={{
               fontSize: data.fontSize || 13,
               color: '#0f172a',
-              fontWeight: 500,
+              fontWeight: 600,
               // Auto-wrap text and respect node size
               whiteSpace: 'normal',
               wordBreak: 'break-word',
@@ -333,18 +336,27 @@ function defaultBorder(type: string): string {
   return borders[type] || '#6366f1';
 }
 
-// Wrapper that adds hover lift effect
-function VisualWrapper({ children, selected, dragging }: { children: React.ReactNode; selected: boolean; dragging?: boolean }) {
+// Wrapper that adds hover lift effect and per-type accent ring on selection
+function VisualWrapper({
+  children, selected, dragging,
+  accentRingClass = 'ring-indigo-500',
+}: {
+  children: React.ReactNode;
+  selected: boolean;
+  dragging?: boolean;
+  accentRingClass?: string;
+}) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
-      className={`w-full h-full ${selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}`}
+      className={`w-full h-full ${selected ? `ring-2 ${accentRingClass} ring-offset-2` : ''}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         filter: hovered && !dragging ? 'brightness(1.02)' : undefined,
         transform: hovered && !selected && !dragging ? 'translateY(-1px)' : undefined,
         transition: dragging ? 'none' : 'filter 0.15s, transform 0.15s',
+        boxShadow: selected ? undefined : hovered ? '0 4px 16px rgba(0,0,0,0.14)' : undefined,
       }}
     >
       {children}
@@ -356,8 +368,8 @@ function VisualWrapper({ children, selected, dragging }: { children: React.React
 
 export function ProcessNode(props: NodeProps<NodeData>) {
   return (
-    <NodeShell {...props} shape={
-      <VisualWrapper selected={props.selected} dragging={props.dragging === true}>
+    <NodeShell {...props} accentRingClass="ring-indigo-500" shape={
+      <VisualWrapper selected={props.selected} dragging={props.dragging === true} accentRingClass="ring-indigo-500">
         <div className="rounded-xl" style={makeGradientStyle('process', props.data)} />
       </VisualWrapper>
     }
@@ -381,9 +393,10 @@ export function DecisionNode(props: NodeProps<NodeData>) {
   };
   return (
     <NodeShell {...props} minW={180} minH={120}
+      accentRingClass="ring-amber-500"
       labelStyle={diamondLabelStyle}
       shape={
-        <VisualWrapper selected={props.selected} dragging={props.dragging === true}>
+        <VisualWrapper selected={props.selected} dragging={props.dragging === true} accentRingClass="ring-amber-500">
           <svg
             width="100%"
             height="100%"
@@ -414,8 +427,8 @@ export function DecisionNode(props: NodeProps<NodeData>) {
 
 export function StartNode(props: NodeProps<NodeData>) {
   return (
-    <NodeShell {...props} shape={
-      <VisualWrapper selected={props.selected} dragging={props.dragging === true}>
+    <NodeShell {...props} accentRingClass="ring-emerald-500" shape={
+      <VisualWrapper selected={props.selected} dragging={props.dragging === true} accentRingClass="ring-emerald-500">
         <div className="rounded-full" style={makeGradientStyle('start', props.data)} />
       </VisualWrapper>
     }
@@ -426,8 +439,8 @@ export function StartNode(props: NodeProps<NodeData>) {
 
 export function EndNode(props: NodeProps<NodeData>) {
   return (
-    <NodeShell {...props} shape={
-      <VisualWrapper selected={props.selected} dragging={props.dragging === true}>
+    <NodeShell {...props} accentRingClass="ring-rose-500" shape={
+      <VisualWrapper selected={props.selected} dragging={props.dragging === true} accentRingClass="ring-rose-500">
         <div className="rounded-full" style={makeGradientStyle('end', { ...props.data, color: props.data.color, borderColor: props.data.borderColor || '#dc2626' })} />
       </VisualWrapper>
     }
@@ -440,8 +453,8 @@ export function DataNode(props: NodeProps<NodeData>) {
   const { data } = props;
   const border = data.borderColor || '#16a34a';
   return (
-    <NodeShell {...props} shape={
-      <VisualWrapper selected={props.selected} dragging={props.dragging === true}>
+    <NodeShell {...props} accentRingClass="ring-teal-500" shape={
+      <VisualWrapper selected={props.selected} dragging={props.dragging === true} accentRingClass="ring-teal-500">
         <svg width="100%" height="100%" viewBox="0 0 160 60" preserveAspectRatio="none" className="absolute inset-0">
           <defs>
             <linearGradient id="dataGrad" x1="0%" y1="0%" x2="100%" y2="100%">

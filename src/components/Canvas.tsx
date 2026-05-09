@@ -173,8 +173,16 @@ export function Canvas({ whiteboardMode, canvasRef }: CanvasProps) {
         )}
         <Controls className="!border-gray-200 dark:!border-gray-700 !bg-white dark:!bg-gray-800 !shadow-lg !rounded-xl overflow-hidden" />
         <MiniMap
-          className="!border-gray-200 dark:!border-gray-700 !bg-white dark:!bg-gray-800"
-          nodeColor={n => n.data?.color || '#e5e7eb'}
+          className="!border !border-gray-200 dark:!border-gray-700 !bg-white dark:!bg-gray-800 !rounded-xl !shadow-sm"
+          nodeColor={n => {
+            const accentMap: Record<string, string> = {
+              start: '#10b981', end: '#f43f5e', decision: '#f59e0b',
+              process: '#6366f1', data: '#14b8a6', database: '#3b82f6',
+              document: '#f97316', manual_action: '#8b5cf6', annotation: '#eab308',
+              connector: '#6366f1', delay: '#22c55e', subprocess: '#6366f1',
+            };
+            return accentMap[n.type || ''] || n.data?.borderColor || '#6366f1';
+          }}
           maskColor="rgba(0,0,0,0.07)"
         />
       </ReactFlow>

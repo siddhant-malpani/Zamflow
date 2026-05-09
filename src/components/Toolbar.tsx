@@ -240,6 +240,8 @@ export function Toolbar({ whiteboardMode, onToggleWhiteboard, canvasRef, flowsAp
 
       <div className="flex-1" />
 
+      <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
+
       {/* Share button for active flow in toolbar */}
       {flowsApi && activeFlow && (
         <div className="relative">
@@ -300,6 +302,8 @@ export function Toolbar({ whiteboardMode, onToggleWhiteboard, canvasRef, flowsAp
         <span className="text-xs font-medium">Text</span>
         <span className="text-[9px] text-gray-400 dark:text-gray-500 font-mono hidden sm:inline">⌘/</span>
       </button>
+
+      <div className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
 
       <button
         onClick={onToggleWhiteboard}

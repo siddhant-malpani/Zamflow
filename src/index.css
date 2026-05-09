@@ -41,11 +41,18 @@
   opacity: 1 !important;
 }
 
-/* Enlarge handle slightly when a connection drag is in progress */
+/* Enlarge handle and show snap-ring when a connection drag is in progress */
 .react-flow__handle-connecting,
 .react-flow__handle-valid {
   opacity: 1 !important;
-  transform: scale(1.25);
+  transform: scale(1.5);
+}
+
+/* Snap-ring glow on the handle dot itself during active drag */
+.react-flow__handle-connecting .zampflow-handle,
+.react-flow__handle-valid .zampflow-handle {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35), 0 0 0 5px rgba(99, 102, 241, 0.15) !important;
+  transform: scale(1.4) !important;
 }
 
 /* Ensure handles always receive pointer events regardless of parent overflow */

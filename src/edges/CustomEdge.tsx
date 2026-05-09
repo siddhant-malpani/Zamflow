@@ -46,8 +46,14 @@ export function CustomEdge({
             className="nodrag nopan"
           >
             <span
-              className="text-xs font-medium px-1.5 py-0.5 rounded-full shadow-sm border"
-              style={{ background: 'white', color: '#0f172a', borderColor: '#e2e8f0' }}
+              className="text-xs font-medium px-2 py-0.5 rounded-full shadow-sm border"
+              style={{
+                background: 'rgba(255,255,255,0.85)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                color: '#0f172a',
+                borderColor: '#e2e8f0',
+              }}
             >
               {condLabel}
             </span>
