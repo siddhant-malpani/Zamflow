@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Executor scratch files
+*.bak
+*.bak2
+*.bak3
+*.bak.bug
+*.bak.audit
+*.fixed
+*.fixed_backup
